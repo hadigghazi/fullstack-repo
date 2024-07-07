@@ -115,7 +115,78 @@ git add backend
 git commit -m "Update submodule: backend-repo"
 git push origin main
 ```
-This script was supposed to be working automatically after every push to github from frontend-repo and backend-repo but it was unsuccessful(you can see the tests as commits on those repositories)
+
+## Tutorial: Setting Up Automated Submodule Updates
+
+### Step 1: Create Repositories
+1. Create three repositories on GitHub: `frontend-repo`, `backend-repo`, and `fullstack-repo`.
+2. Clone these repositories to your local machine.
+
+### Step 2: Add Python Files
+1. Create `client.py` in `frontend-repo` and `server.py` in `backend-repo`.
+2. Push these files to their respective repositories.
+
+### Step 3: Add Submodules
+1. In `fullstack-repo`, add `frontend-repo` and `backend-repo` as submodules:
+   ```bash
+   git submodule add https://github.com/yourusername/frontend-repo.git
+   git submodule add https://github.com/yourusername/backend-repo.git
+   ```
+
+### Step 4: Create Configuration File
+1. In `fullstack-repo`, create a `config.yaml` file with the following content:
+   ```yaml
+   ServerIPAddress: 127.0.0.1
+   run_localhost: true
+   ```
+2. Push the changes to GitHub.
+
+### Step 5: Setup Post-Receive Hooks
+1. In `fullstack-repo`, add the following script to `.git/hooks/post-receive`:
+
+   ```bash
+   #!/bin/bash -e
+   UPDATED_BRANCHES="^(main|develop)$"
+   UPDATED_REPOS="^(https:\/\/github.com\/hadigghazi\/frontend-repo.git|https:\/\/github.com\/hadigghazi\/backend-repo.git)$"
+   read REV_OLD REV_NEW FULL_REF
+   BRANCH=${FULL_REF##refs/heads/}
+   if [[ "${BRANCH}" =~ ${UPDATED_BRANCHES} ]] && [[ "${GL_REPO}" =~ ${UPDATED_REPOS} ]];
+   then
+       SUPERBRANCH=$FULL_REF
+       SUBMODULE_NAME=${GL_REPO##https://github.com/hadigghazi/}
+       unset $(git rev-parse --local-env-vars)
+       cd C:/Users/mycom/Downloads/fullstack-repo
+       echo "Automatically updating the '$SUBMODULE_NAME' reference in the super repository..."
+       git ls-tree $SUPERBRANCH | \
+           sed "s/\([0-9]*\) commit \([0-9a-f]*\)\t$SUBMODULE_NAME/\1 commit $REV_NEW\t$SUBMODULE_NAME/g" | \
+           git update-index --index-info
+       TREE_NEW=$(git write-tree)
+       COMMIT_OLD=$(git show-ref --hash $SUPERBRANCH)
+       COMMIT_NEW=$(echo "Auto-update submodule: $SUBMODULE_NAME" | git commit-tree $TREE_NEW -p $COMMIT_OLD)
+       git update-ref $SUPERBRANCH $COMMIT_NEW
+   fi
+   ```
+
+2. In both `frontend-repo` and `backend-repo`, add the following script to `.git/hooks/post-receive`:
+
+   ```bash
+   #!/bin/bash
+   echo "Executing post-receive hook for repository: $GL_REPO"
+   echo "SUPERREPO_DIR is set to: $SUPERREPO_DIR"
+   cd C:/Users/mycom/Downloads/fullstack-repo
+   git submodule update --remote --merge backend
+   git add backend
+   git commit -m "Update submodule: backend-repo"
+   git push origin main
+   echo "Post-receive hook executed successfully."
+   ```
+
+### Step 6: Test the Setup
+1. Push changes to `frontend-repo` and `backend-repo`.
+2. Verify that the changes are reflected in `fullstack-repo`.
+
+## Graphical Representation
+![Graph](https://drive.google.com/file/d/1_hiN0Sq2kBB6DMUkiloMe-ikRY8xwZr-/view?usp=drive_link)
 
 ## Current Status
 - The `config.yaml` file is accessed by both `frontend-repo` and `backend-repo`.
@@ -123,4 +194,4 @@ This script was supposed to be working automatically after every push to github 
 - Automated updates upon pushing to `frontend-repo` and `backend-repo` are under testing and refinement.
 
 ## Conclusion
-This setup ensures that changes in the `frontend` and `backend` repositories are propagated to the `fullstack` repository, maintaining synchronization and central configuration management. Further refinement and testing of the automation scripts will ensure seamless updates.
+This setup ensures that changes in the `frontend` and `backend` repositories are automatically propagated to the `fullstack` repository, maintaining synchronization and central configuration management. Further refinement and testing of the automation scripts will ensure seamless updates.
