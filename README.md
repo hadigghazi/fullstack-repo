@@ -186,7 +186,7 @@ git push origin main
 2. Verify that the changes are reflected in `fullstack-repo`.
 
 ## Graphical Representation
-![Graph](https://drive.google.com/file/d/1_hiN0Sq2kBB6DMUkiloMe-ikRY8xwZr-/view?usp=drive_link)
+![Graph](https://github.com/hadigghazi/fullstack-repo/blob/main/graph.jpg)
 
 ## Current Status
 - The `config.yaml` file is accessed by both `frontend-repo` and `backend-repo`.
